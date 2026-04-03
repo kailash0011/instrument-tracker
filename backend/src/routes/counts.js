@@ -34,6 +34,15 @@ router.post('/session', authenticateToken, (req, res) => {
     const { date, shift, department_id } = req.body;
     const db = getDb();
 
+    // Enforce shift time window (Nepal time)
+    const hour = getNepalHour();
+    if (shift === 'morning' && !(hour >= 6 && hour < 12)) {
+      return res.status(403).json({ error: 'Morning shift is only accessible between 06:00 AM – 12:00 PM Nepal time.' });
+    }
+    if (shift === 'evening' && !(hour >= 12 && hour < 20)) {
+      return res.status(403).json({ error: 'Evening shift is only accessible between 12:00 PM – 08:00 PM Nepal time.' });
+    }
+
     const existing = db.prepare('SELECT * FROM count_sessions WHERE date = ? AND shift = ? AND department_id = ?').get(date, shift, department_id);
     if (existing) {
       if (existing.is_submitted) {

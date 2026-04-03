@@ -56,9 +56,21 @@ export default function Count() {
     setSelectedShift(getActiveShift())
   }, [])
 
+  function isShiftAllowed(shift) {
+    const hour = getNepalHour()
+    if (shift === 'morning') return hour >= 6 && hour < 12
+    if (shift === 'evening') return hour >= 12 && hour < 20
+    return false
+  }
+
   async function handleStartCount() {
     if (!selectedShift || !selectedDept) {
       setError('Please select both shift and department')
+      return
+    }
+    if (!isShiftAllowed(selectedShift)) {
+      const windows = { morning: '06:00 AM – 12:00 PM', evening: '12:00 PM – 08:00 PM' }
+      setError(`${selectedShift.charAt(0).toUpperCase() + selectedShift.slice(1)} shift is only accessible between ${windows[selectedShift]} Nepal time.`)
       return
     }
     setError('')
@@ -167,8 +179,6 @@ export default function Count() {
     inst.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  const activeShift = getActiveShift()
-
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
@@ -181,22 +191,27 @@ export default function Count() {
           {/* Shift selection */}
           <h2 className="text-lg font-semibold text-gray-700 mb-4">Select Shift</h2>
           <div className="flex gap-4 mb-6">
-            {['morning', 'evening'].map(shift => (
+            {['morning', 'evening'].map(shift => {
+              const allowed = isShiftAllowed(shift)
+              return (
               <button
                 key={shift}
                 onClick={() => setSelectedShift(shift)}
                 className={`flex-1 py-3 rounded-xl font-semibold capitalize text-sm border-2 transition ${
                   selectedShift === shift
                     ? 'bg-indigo-600 border-indigo-600 text-white'
-                    : activeShift === shift
+                    : allowed
                     ? 'border-indigo-300 text-indigo-600 bg-indigo-50'
-                    : 'border-gray-200 text-gray-500 hover:border-indigo-300'
+                    : 'border-gray-200 text-gray-400 bg-gray-50'
                 }`}
               >
                 {shift === 'morning' ? '🌅' : '🌆'} {shift}
-                {activeShift === shift && <span className="ml-1 text-xs">(Active)</span>}
+                {allowed
+                  ? <span className="ml-1 text-xs">(Active)</span>
+                  : <span className="ml-1 text-xs text-gray-400">(Inactive)</span>}
               </button>
-            ))}
+              )
+            })}
           </div>
 
           {/* Department selection */}
