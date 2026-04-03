@@ -13,7 +13,7 @@ function getNepalHour() {
 }
 
 // POST /check
-router.post('/check', (req, res) => {
+router.post('/check', authenticateToken, (req, res) => {
   try {
     const { date, shift, department_id } = req.body;
     const db = getDb();
