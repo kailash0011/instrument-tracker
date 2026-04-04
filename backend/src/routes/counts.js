@@ -75,7 +75,7 @@ router.get('/session/:id', authenticateToken, (req, res) => {
 
     const instrumentsWithEntries = instruments.map(inst => ({
       ...inst,
-      entry: entryMap[inst.id] || { actual_count: 0, status: 'normal', remarks: '' }
+      entry: entryMap[inst.id] || { actual_count: '', status: 'normal', remarks: '' }
     }));
 
     let submittedByUser = null;

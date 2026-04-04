@@ -115,6 +115,21 @@ One submission per day + shift + department is allowed.
 
 ---
 
+## Admin: Reset Staff Password
+
+If a staff member forgets their password, the admin can reset it from the **Manage Staff** page:
+
+1. Log in as Admin.
+2. Go to **Manage Staff** in the navbar.
+3. Click **Reset Password** next to the staff member's row.
+4. Confirm the prompt — a random 8-character temporary password is generated.
+5. The temporary password is shown **once** on screen. Share it with the staff member verbally or on paper.
+6. The staff member can log in immediately with the temporary password.
+
+> **Security note:** Passwords are never stored in plaintext — only a bcrypt hash is saved. The temporary password is shown once to the admin immediately after reset and is not stored anywhere. Once you dismiss the banner, the password cannot be retrieved again.
+
+---
+
 ## Export Usage (Admin only)
 
 1. Log in as Admin
@@ -160,6 +175,7 @@ One submission per day + shift + department is allowed.
 | GET    | /api/staff                    | List staff (admin)               |
 | PUT    | /api/staff/:id/block          | Block staff login (admin)        |
 | PUT    | /api/staff/:id/unblock        | Unblock staff login (admin)      |
+| PUT    | /api/staff/:id/reset-password | Reset staff password (admin)     |
 | GET    | /api/export/excel             | Download Excel (admin)           |
 | GET    | /api/export/print             | Print report data (admin)        |
 

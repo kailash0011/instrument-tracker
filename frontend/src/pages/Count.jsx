@@ -284,7 +284,7 @@ export default function Count() {
 
           <div className="space-y-3">
             {filteredInstruments.map(inst => {
-              const entry = entries[inst.id] || { actual_count: 0, status: 'normal', remarks: '' }
+              const entry = entries[inst.id] || { actual_count: '', status: 'normal', remarks: '' }
               const count = parseInt(entry.actual_count)
               const isMismatch = !isNaN(count) && entry.actual_count !== '' && count !== inst.expected_quantity
               const isExpanded = expandedRows[inst.id]
