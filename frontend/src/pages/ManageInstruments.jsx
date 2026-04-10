@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../api/axios'
+import { readFromStorage, writeToStorage, removeFromStorage } from '../utils/storage'
 
 export default function ManageInstruments() {
   const [departments, setDepartments] = useState([])
@@ -21,6 +22,12 @@ export default function ManageInstruments() {
   async function loadDepartments() {
     const res = await api.get('/departments')
     setDepartments(res.data)
+    // Restore the last selected department if it still exists
+    const savedId = readFromStorage('manage:selectedDept')
+    if (savedId) {
+      const found = res.data.find(d => d.id === savedId)
+      if (found) setSelectedDept(found)
+    }
   }
 
   async function loadInstruments(deptId) {
@@ -30,7 +37,12 @@ export default function ManageInstruments() {
 
   useEffect(() => { loadDepartments() }, [])
   useEffect(() => {
-    if (selectedDept) loadInstruments(selectedDept.id)
+    if (selectedDept) {
+      writeToStorage('manage:selectedDept', selectedDept.id)
+      loadInstruments(selectedDept.id)
+    } else {
+      removeFromStorage('manage:selectedDept')
+    }
   }, [selectedDept])
 
   async function addDept() {

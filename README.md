@@ -10,6 +10,7 @@ A full-stack web application for tracking surgical instruments in an Operation T
 - 📊 Real-time Dashboard with Nepal timezone (Asia/Kathmandu) support
 - 📈 Chart-based visualisations: daily summary bar chart & session-completion donut chart
 - 🌙 Dark mode toggle with `localStorage` persistence and system-preference fallback
+- 💾 UI state persistence via `localStorage` (last-used department, in-progress count entries)
 - 🔢 Instrument count tracking with Morning / Evening shifts
 - ⏰ Shift time-window enforcement (Morning: 6 AM–12 PM | Evening: 12 PM–8 PM)
 - ⚠️ Mismatch detection (actual vs expected counts)
@@ -94,6 +95,53 @@ backend/data/instrument_tracker.db
 This file is created automatically on first startup. It can be backed up by simply copying this file.
 
 **To reset all data:** delete `backend/data/instrument_tracker.db` and restart the server. Default seed data (departments, instruments, admin account) will be recreated.
+
+---
+
+## Browser localStorage Persistence
+
+In addition to the SQLite database, the frontend stores lightweight UI state in the browser's `localStorage` so that user preferences and in-progress work survive a page refresh without requiring data to be re-entered.
+
+### What is stored
+
+All keys are namespaced with the prefix `instrument-tracker:` to avoid collisions.
+
+| localStorage key | Content | When written | When cleared |
+|---|---|---|---|
+| `instrument-tracker:count:selectedDept` | Last selected department ID on the Count page | On every department selection change | Never (updates on re-selection) |
+| `instrument-tracker:count:entries:<sessionId>` | In-progress count entries for the active session (actual counts, statuses, remarks) | On every entry edit while a session is open | When the session is submitted |
+| `instrument-tracker:manage:selectedDept` | Last selected department ID on the Manage Instruments page | On every department selection change | When no department is selected |
+| `theme` | UI colour theme (`"light"` or `"dark"`) | On every theme toggle | Never |
+| `token` | JWT auth token | On login / signup | On logout |
+| `user` | Logged-in user info (JSON) | On login / signup | On logout |
+
+> **Note:** Instrument counts, session history, and all business data are stored exclusively in the SQLite database on the server and are not duplicated in localStorage.
+
+### Behaviour on page refresh
+
+- The last-used **department** is automatically re-selected on the Count page and the Manage Instruments page.
+- Any **in-progress count entries** edited but not yet debounce-saved to the server are restored when you re-open the same session (click *Start Count* again for the same shift/department/date).
+- After a session is **submitted**, its localStorage entries are cleared.
+
+### Data scope and privacy
+
+localStorage is **browser-local** — the data is stored only on the device and browser used to access the app. It is not synced across devices or users.
+
+### How to reset / clear localStorage data
+
+Open your browser's developer tools, go to **Application → Local Storage**, select the app origin, and delete the relevant keys (all prefixed `instrument-tracker:`), or run the following in the browser console:
+
+```js
+Object.keys(localStorage)
+  .filter(k => k.startsWith('instrument-tracker:'))
+  .forEach(k => localStorage.removeItem(k))
+```
+
+Clearing localStorage only resets UI preferences. All submitted count data remains intact in the SQLite database.
+
+### Corrupted entries
+
+The storage utility wraps every read with a `try/catch` around `JSON.parse`. If a stored value is malformed, the fallback value is used silently and the app continues to function normally.
 
 ---
 

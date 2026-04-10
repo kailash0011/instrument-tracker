@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api/axios'
+import { readFromStorage, writeToStorage, removeFromStorage } from '../utils/storage'
 
 const STATUS_OPTIONS = [
   { value: 'normal', label: 'Normal' },
@@ -23,7 +24,7 @@ export default function Count() {
   const [nepalTime, setNepalTime] = useState('')
   const [selectedShift, setSelectedShift] = useState(null)
   const [departments, setDepartments] = useState([])
-  const [selectedDept, setSelectedDept] = useState('')
+  const [selectedDept, setSelectedDept] = useState(() => readFromStorage('count:selectedDept', ''))
   const [session, setSession] = useState(null)
   const [instruments, setInstruments] = useState([])
   const [entries, setEntries] = useState({})
@@ -55,6 +56,20 @@ export default function Count() {
     api.get('/departments').then(res => setDepartments(res.data)).catch(console.error)
     setSelectedShift(getActiveShift())
   }, [])
+
+  // Persist selected department across page reloads
+  useEffect(() => {
+    writeToStorage('count:selectedDept', selectedDept)
+  }, [selectedDept])
+
+  // Persist in-progress count entries so unsaved changes survive a page reload.
+  // The key is scoped to the session ID so stale data from a previous session
+  // never leaks into a new one.
+  useEffect(() => {
+    if (session && !isSubmitted) {
+      writeToStorage(`count:entries:${session.id}`, entries)
+    }
+  }, [entries, session, isSubmitted])
 
   function isShiftAllowed(shift) {
     const hour = getNepalHour()
@@ -112,6 +127,16 @@ export default function Count() {
       fullSession.data.instruments.forEach(inst => {
         initialEntries[inst.id] = { ...inst.entry }
       })
+      // Merge any unsaved entries from localStorage (e.g., from a page reload
+      // mid-count) on top of the authoritative data from the server.
+      const savedEntries = readFromStorage(`count:entries:${fullSession.data.id}`)
+      if (savedEntries) {
+        Object.keys(savedEntries).forEach(id => {
+          if (initialEntries[id]) {
+            initialEntries[id] = { ...initialEntries[id], ...savedEntries[id] }
+          }
+        })
+      }
       setEntries(initialEntries)
     } catch (err) {
       if (err.response?.data?.error === 'Session already submitted') {
@@ -163,6 +188,8 @@ export default function Count() {
         saveEntry(parseInt(id))
       })
       await api.post(`/counts/submit/${session.id}`)
+      // Clear persisted in-progress entries now that the session is submitted
+      removeFromStorage(`count:entries:${session.id}`)
       setIsSubmitted(true)
     } catch (err) {
       setError(err.response?.data?.error || 'Submit failed')
