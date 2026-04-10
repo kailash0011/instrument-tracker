@@ -1,0 +1,96 @@
+name: Deploy
+
+# Trigger manually or on pushes to main after CI passes.
+# Adjust the branch / event to match your hosting target.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        default: 'production'
+        type: choice
+        options: [production, staging]
+  # Uncomment to auto-deploy on main after CI:
+  # workflow_run:
+  #   workflows: ["CI"]
+  #   branches: [main]
+  #   types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy — ${{ inputs.environment || 'production' }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'production' }}
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      # ── Frontend build ────────────────────────────────────────────────
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          # Override the API base URL for production if hosting frontend separately.
+          # Set VITE_API_BASE_URL in your GitHub environment secrets.
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL || '' }}
+        run: npm run build
+
+      # ── Backend dependencies ──────────────────────────────────────────
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci --omit=dev
+
+      # ── Deploy step (replace with your hosting provider) ─────────────
+      # Examples below — uncomment the one that matches your deployment target.
+      #
+      # --- Option A: SSH / rsync to a VPS or on-prem server ---
+      # - name: Deploy to server via SSH
+      #   uses: appleboy/ssh-action@v1
+      #   with:
+      #     host: ${{ secrets.DEPLOY_HOST }}
+      #     username: ${{ secrets.DEPLOY_USER }}
+      #     key: ${{ secrets.DEPLOY_SSH_KEY }}
+      #     script: |
+      #       cd /opt/instrument-tracker
+      #       git pull origin main
+      #       cd backend && npm ci --omit=dev
+      #       pm2 restart instrument-tracker-backend || pm2 start src/index.js --name instrument-tracker-backend
+      #
+      # --- Option B: Deploy to Render.com (backend as web service) ---
+      # - name: Trigger Render deploy hook
+      #   run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+      #
+      # --- Option C: Deploy frontend to GitHub Pages ---
+      # - name: Deploy frontend to GitHub Pages
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: frontend/dist
+      #
+      # --- Option D: Deploy to a cloud provider (AWS, GCP, Azure) ---
+      # Add provider-specific steps and secrets here.
+
+      - name: Deployment placeholder
+        run: |
+          echo "✅ Build artifacts ready."
+          echo "   frontend/dist/   — static files"
+          echo "   backend/         — Node.js API server"
+          echo ""
+          echo "Uncomment the deploy step in .github/workflows/deploy.yml that"
+          echo "matches your hosting target and add the required secrets."
