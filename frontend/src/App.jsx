@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Navbar from './components/Navbar'
 import Login from './pages/Login'
@@ -15,7 +16,7 @@ import { useAuth } from './contexts/AuthContext'
 function AppLayout({ children }) {
   const { user } = useAuth()
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors">
       {user && <Navbar />}
       <main className={user ? 'pt-16' : ''}>
         {children}
@@ -26,22 +27,24 @@ function AppLayout({ children }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppLayout>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/count" element={<ProtectedRoute><Count /></ProtectedRoute>} />
-            <Route path="/admin/instruments" element={<ProtectedRoute adminOnly><ManageInstruments /></ProtectedRoute>} />
-            <Route path="/admin/staff" element={<ProtectedRoute adminOnly><ManageStaff /></ProtectedRoute>} />
-            <Route path="/admin/export" element={<ProtectedRoute adminOnly><Export /></ProtectedRoute>} />
-            <Route path="/admin/print" element={<ProtectedRoute adminOnly><PrintView /></ProtectedRoute>} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AppLayout>
-      </AuthProvider>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppLayout>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/count" element={<ProtectedRoute><Count /></ProtectedRoute>} />
+              <Route path="/admin/instruments" element={<ProtectedRoute adminOnly><ManageInstruments /></ProtectedRoute>} />
+              <Route path="/admin/staff" element={<ProtectedRoute adminOnly><ManageStaff /></ProtectedRoute>} />
+              <Route path="/admin/export" element={<ProtectedRoute adminOnly><Export /></ProtectedRoute>} />
+              <Route path="/admin/print" element={<ProtectedRoute adminOnly><PrintView /></ProtectedRoute>} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AppLayout>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }

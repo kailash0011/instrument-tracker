@@ -2,10 +2,14 @@
 
 A full-stack web application for tracking surgical instruments in an Operation Theatre. Built for hospital desktop use (local/on-prem), with mobile-friendly UI.
 
+![CI](https://github.com/kailash0011/instrument-tracker/actions/workflows/ci.yml/badge.svg)
+
 ## Features
 
 - 🔐 JWT Authentication with role-based access (Admin / Staff)
 - 📊 Real-time Dashboard with Nepal timezone (Asia/Kathmandu) support
+- 📈 Chart-based visualisations: daily summary bar chart & session-completion donut chart
+- 🌙 Dark mode toggle with `localStorage` persistence and system-preference fallback
 - 🔢 Instrument count tracking with Morning / Evening shifts
 - ⏰ Shift time-window enforcement (Morning: 6 AM–12 PM | Evening: 12 PM–8 PM)
 - ⚠️ Mismatch detection (actual vs expected counts)
@@ -17,13 +21,15 @@ A full-stack web application for tracking surgical instruments in an Operation T
 
 ## Tech Stack
 
-| Layer    | Technology                                          |
-|----------|-----------------------------------------------------|
-| Backend  | Node.js + Express + SQLite (better-sqlite3)         |
-| Auth     | JWT + bcryptjs                                      |
-| Export   | ExcelJS                                             |
-| Frontend | React 18 + Vite + Tailwind CSS + React Router v6   |
-| HTTP     | Axios                                               |
+| Layer    | Technology                                                    |
+|----------|---------------------------------------------------------------|
+| Backend  | Node.js + Express + SQLite (better-sqlite3)                   |
+| Auth     | JWT + bcryptjs                                                |
+| Export   | ExcelJS                                                       |
+| Frontend | React 18 + Vite + Tailwind CSS (dark mode) + React Router v6 |
+| Charts   | Recharts                                                      |
+| HTTP     | Axios + service-layer cache                                   |
+| CI/CD    | GitHub Actions                                                |
 
 ---
 
@@ -188,6 +194,64 @@ To allow other devices on the same network to access the app:
 1. Find your PC's local IP (e.g., `192.168.1.100`)
 2. In `frontend/vite.config.js`, the `proxy` is set to `http://localhost:5000` — this is for development only
 3. For production, configure your backend to listen on `0.0.0.0` (already done) and access from other devices at `http://192.168.1.100:5000`
+
+---
+
+## CI / CD
+
+### GitHub Actions workflows
+
+| Workflow | File | Triggers |
+|----------|------|----------|
+| **CI** | `.github/workflows/ci.yml` | Every push & pull-request to `main` |
+| **Deploy** | `.github/workflows/deploy.yml` | Manual (`workflow_dispatch`) or un-comment auto-trigger |
+
+#### CI workflow (`ci.yml`)
+
+Runs on every push/PR to `main`:
+
+1. **Frontend** — `npm ci` → `npm run lint` → `npm run build`
+2. **Backend** — `npm ci` → validates `package.json` + entry point
+
+Both jobs use `actions/setup-node@v4` with npm caching keyed to each `package-lock.json` for fast, deterministic runs.
+
+#### Running checks locally
+
+```bash
+# Frontend
+cd frontend
+npm ci
+npm run lint     # ESLint (fails on >5 warnings)
+npm run build    # Vite production build
+
+# Backend
+cd backend
+npm ci
+node -e "require('./package.json')"   # validates JSON
+```
+
+#### Deploy workflow (`deploy.yml`)
+
+A scaffold you customise for your hosting target. Trigger it manually from the GitHub Actions UI.
+
+**Built-in options (uncomment the relevant block in the file):**
+
+| Target | Description |
+|--------|-------------|
+| SSH / rsync | Deploy to a VPS or on-prem server with `appleboy/ssh-action` |
+| Render.com | Trigger a deploy hook URL |
+| GitHub Pages | Publish `frontend/dist/` via `peaceiris/actions-gh-pages` |
+| Cloud (AWS/GCP/Azure) | Add provider-specific steps and secrets |
+
+**Required secrets** (add in _Settings → Secrets and variables → Actions_):
+
+| Secret | Used by | Description |
+|--------|---------|-------------|
+| `VITE_API_BASE_URL` | Deploy | Override API base URL for production builds |
+| `DEPLOY_HOST` | SSH option | Target server hostname/IP |
+| `DEPLOY_USER` | SSH option | SSH username |
+| `DEPLOY_SSH_KEY` | SSH option | Private SSH key |
+| `RENDER_DEPLOY_HOOK_URL` | Render option | Render deploy hook URL |
 
 ---
 
